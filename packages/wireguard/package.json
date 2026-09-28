@@ -1,0 +1,21 @@
+{
+  "name": "@bharattunnel/wireguard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bharattunnel/shared": "*",
+    "@bharattunnel/config": "*",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.7.2"
+  }
+}

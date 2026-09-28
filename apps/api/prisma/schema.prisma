@@ -1,0 +1,160 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum DeviceStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum IpAllocationStatus {
+  ALLOCATED
+  RELEASED
+}
+
+enum GatewayStatus {
+  HEALTHY
+  DEGRADED
+  DOWN
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  fullName     String
+  role         UserRole      @default(USER)
+  status       UserStatus    @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  devices      Device[]
+  sessions     Session[]
+  usageRecords UsageRecord[]
+  auditEvents  AuditEvent[]
+
+  @@map("users")
+}
+
+model Device {
+  id        String       @id @default(uuid())
+  userId    String
+  name      String
+  status    DeviceStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  revokedAt DateTime?
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vpnPeer   VpnPeer?
+
+  @@index([userId])
+  @@map("devices")
+}
+
+model VpnPeer {
+  id                String        @id @default(uuid())
+  deviceId          String        @unique
+  publicKey         String        @unique
+  tunnelIp          String        @unique
+  serverEndpoint    String
+  latestHandshakeAt DateTime?
+  bytesRx           BigInt        @default(0)
+  bytesTx           BigInt        @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  device            Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  ipAllocation      IpAllocation?
+
+  @@map("vpn_peers")
+}
+
+model VpnGateway {
+  id             String        @id @default(uuid())
+  name           String
+  endpoint       String
+  publicKey      String
+  listenPort     Int           @default(51820)
+  networkCidr    String        @default("10.50.0.0/24")
+  gatewayIp      String        @default("10.50.0.1")
+  status         GatewayStatus @default(HEALTHY)
+  lastHeartbeat  DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  @@map("vpn_gateways")
+}
+
+model IpAllocation {
+  id          String             @id @default(uuid())
+  ipAddress   String             @unique
+  status      IpAllocationStatus @default(ALLOCATED)
+  vpnPeerId   String?            @unique
+  allocatedAt DateTime           @default(now())
+  releasedAt  DateTime?
+
+  vpnPeer     VpnPeer?           @relation(fields: [vpnPeerId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("ip_allocations")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model UsageRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  bytesRx     BigInt   @default(0)
+  bytesTx     BigInt   @default(0)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, periodStart])
+  @@map("usage_records")
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid())
+  userId    String?
+  adminId   String?
+  action    String
+  ipAddress String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@map("audit_events")
+}

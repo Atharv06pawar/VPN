@@ -1,0 +1,48 @@
+name: BharatTunnel CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-and-test:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install System WireGuard Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wireguard-tools
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run --workspace=@bharattunnel/api db:generate
+
+      - name: Typecheck TypeScript Code
+        run: npm run typecheck
+
+      - name: Run Unit Tests
+        run: npm run test:unit
+
+      - name: Run Security Tests (Command Injection, IDOR, Rate Limiting)
+        run: npm run test:security
+
+      - name: Run Integration Tests
+        run: npm run test:integration
+
+      - name: Build Monorepo Workspaces
+        run: npm run build

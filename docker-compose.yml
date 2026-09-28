@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bharattunnel-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bharat
+      POSTGRES_PASSWORD: tunnel_secret
+      POSTGRES_DB: bharattunnel
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bharat -d bharattunnel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.api
+    container_name: bharattunnel-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://bharat:tunnel_secret@postgres:5432/bharattunnel?schema=public
+      JWT_SECRET: dev_jwt_secret_must_be_over_32_characters_long_for_security_12345
+      SESSION_SECRET: dev_session_secret_must_be_over_32_characters_long_for_sec_12345
+      COOKIE_SECRET: dev_cookie_secret_must_be_over_32_characters_long_for_sec_12345
+      VPN_SERVER_HOST: 127.0.0.1
+      VPN_SERVER_PORT: 51820
+      VPN_SERVER_PUBLIC_KEY: YWRtaW4td2ctcHViLWtleS1zYW1wbGUtZGF0YS0xMjM0NTY3OA==
+      WIREGUARD_DRIVER: mock
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.web
+    container_name: bharattunnel-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

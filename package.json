@@ -1,0 +1,29 @@
+{
+  "name": "bharattunnel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-oriented India-exit WireGuard VPN control plane for Indian students living abroad",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run --workspaces --if-present build",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:security": "vitest run tests/security",
+    "lint": "npm run --workspaces --if-present lint",
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "dev:api": "npm run --workspace=@bharattunnel/api dev",
+    "dev:web": "npm run --workspace=@bharattunnel/web dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
