@@ -13,6 +13,7 @@ const envSchema = z.object({
   WEB_BASE_URL: z.string().default('http://localhost:3000'),
   
   DATABASE_URL: z.string().default('postgresql://bharat:tunnel_secret@localhost:5432/bharattunnel?schema=public'),
+  DIRECT_URL: z.string().optional(),
 
   JWT_SECRET: z.string().min(16).default('dev_jwt_secret_must_be_over_32_characters_long_for_security_12345'),
   SESSION_SECRET: z.string().min(16).default('dev_session_secret_must_be_over_32_characters_long_for_sec_12345'),
@@ -21,10 +22,21 @@ const envSchema = z.object({
   VPN_SERVER_HOST: z.string().default('127.0.0.1'),
   VPN_SERVER_PORT: z.coerce.number().default(51820),
   VPN_SERVER_PUBLIC_KEY: z.string().default('YWRtaW4td2ctcHViLWtleS1zYW1wbGUtZGF0YS0xMjM0NTY3OA=='),
-  VPN_NETWORK: z.string().default('10.50.0.0/24'),
+  VPN_NETWORK: z.string().default('10.50.0.0/22'),
   VPN_GATEWAY_IP: z.string().default('10.50.0.1'),
   VPN_DNS_SERVER: z.string().default('10.50.0.1,1.1.1.1'),
   VPN_INTERFACE: z.string().default('wg0'),
+
+  ENABLE_AMNEZIA_WG: z.coerce.boolean().default(true),
+  AMNEZIA_JC: z.coerce.number().default(4),
+  AMNEZIA_JMIN: z.coerce.number().default(40),
+  AMNEZIA_JMAX: z.coerce.number().default(70),
+  AMNEZIA_S1: z.coerce.number().default(15),
+  AMNEZIA_S2: z.coerce.number().default(30),
+  AMNEZIA_H1: z.coerce.number().default(1),
+  AMNEZIA_H2: z.coerce.number().default(2),
+  AMNEZIA_H3: z.coerce.number().default(3),
+  AMNEZIA_H4: z.coerce.number().default(4),
 
   WIREGUARD_DRIVER: z.enum(['system', 'mock']).default('mock'),
 

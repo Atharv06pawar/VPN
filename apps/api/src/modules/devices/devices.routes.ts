@@ -182,6 +182,18 @@ export const deviceRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       serverEndpoint: `${appConfig.VPN_SERVER_HOST}:${appConfig.VPN_SERVER_PORT}`,
       dnsServers: appConfig.VPN_DNS_SERVER,
       allowedIps: '0.0.0.0/0, ::/0',
+      enableAmneziaWg: appConfig.ENABLE_AMNEZIA_WG,
+      amneziaParams: {
+        jc: appConfig.AMNEZIA_JC,
+        jmin: appConfig.AMNEZIA_JMIN,
+        jmax: appConfig.AMNEZIA_JMAX,
+        s1: appConfig.AMNEZIA_S1,
+        s2: appConfig.AMNEZIA_S2,
+        h1: appConfig.AMNEZIA_H1,
+        h2: appConfig.AMNEZIA_H2,
+        h3: appConfig.AMNEZIA_H3,
+        h4: appConfig.AMNEZIA_H4,
+      },
     });
 
     const qrCodeDataUrl = await generateQrCodeDataUrl(rawConfig);

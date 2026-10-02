@@ -12,6 +12,18 @@ describe('IpAllocator', () => {
     expect(allocator.getTotalCapacity()).toBe(253);
   });
 
+  it('correctly calculates capacity for /22 network (supports up to 1021 devices)', () => {
+    const allocator = new IpAllocator({
+      cidr: '10.50.0.0/22',
+      gatewayIp: '10.50.0.1',
+    });
+
+    // 1024 total - 1 network (10.50.0.0) - 1 broadcast (10.50.3.255) - 1 gateway (10.50.0.1) = 1021 hosts
+    expect(allocator.getTotalCapacity()).toBe(1021);
+    expect(allocator.isIpInSubnet('10.50.3.254')).toBe(true);
+    expect(allocator.isIpInSubnet('10.50.4.1')).toBe(false);
+  });
+
   it('allocates the first available client IP (10.50.0.2)', () => {
     const allocator = new IpAllocator({
       cidr: '10.50.0.0/24',

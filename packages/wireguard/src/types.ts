@@ -25,6 +25,18 @@ export interface GatewaySystemStats {
   bytesTx: number;
 }
 
+export interface AmneziaWgParams {
+  jc?: number;    // Junk packet count (default: 4)
+  jmin?: number;  // Junk packet minimum size (default: 40)
+  jmax?: number;  // Junk packet maximum size (default: 70)
+  s1?: number;    // Init packet junk prefix length (default: 15)
+  s2?: number;    // Response packet junk prefix length (default: 30)
+  h1?: number;    // Under-cover header 1 (default: 1)
+  h2?: number;    // Under-cover header 2 (default: 2)
+  h3?: number;    // Under-cover header 3 (default: 3)
+  h4?: number;    // Under-cover header 4 (default: 4)
+}
+
 export interface WireGuardConfigOptions {
   clientPrivateKey: string;
   clientAddress: string; // e.g. "10.50.0.2/32"
@@ -33,6 +45,8 @@ export interface WireGuardConfigOptions {
   dnsServers?: string;    // e.g. "10.50.0.1, 1.1.1.1"
   allowedIps?: string;    // e.g. "0.0.0.0/0, ::/0"
   persistentKeepalive?: number; // e.g. 25
+  enableAmneziaWg?: boolean;
+  amneziaParams?: AmneziaWgParams;
 }
 
 export interface IWireGuardDriver {

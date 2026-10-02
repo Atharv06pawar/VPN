@@ -17,9 +17,15 @@ if [[ -z "${EXT_IFACE}" ]]; then
 fi
 
 VPN_IFACE="wg0"
-VPN_SUBNET="10.50.0.0/24"
+VPN_SUBNET="10.50.0.0/22"
 SSH_PORT="22"
 WG_PORT="51820"
+
+# Flush legacy Oracle Cloud iptables reject rules that interfere with WireGuard
+if command -v iptables >/dev/null 2>&1; then
+  iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
+  iptables -D FORWARD -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
+fi
 
 echo "[+] Configuring nftables firewall on external interface: ${EXT_IFACE}..."
 

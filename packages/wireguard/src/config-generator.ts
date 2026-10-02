@@ -28,15 +28,34 @@ export function generateWireGuardClientConfig(options: WireGuardConfigOptions): 
   const allowedIps = options.allowedIps || DEFAULT_VPN_ALLOWED_IPS;
   const keepalive = options.persistentKeepalive ?? DEFAULT_KEEPALIVE_SECONDS;
 
+  const interfaceLines = [
+    '[Interface]',
+    `PrivateKey = ${options.clientPrivateKey}`,
+    `Address = ${options.clientAddress}`,
+    `DNS = ${dns}`,
+  ];
+
+  if (options.enableAmneziaWg) {
+    const awg = options.amneziaParams || {};
+    interfaceLines.push(
+      `Jc = ${awg.jc ?? 4}`,
+      `Jmin = ${awg.jmin ?? 40}`,
+      `Jmax = ${awg.jmax ?? 70}`,
+      `S1 = ${awg.s1 ?? 15}`,
+      `S2 = ${awg.s2 ?? 30}`,
+      `H1 = ${awg.h1 ?? 1}`,
+      `H2 = ${awg.h2 ?? 2}`,
+      `H3 = ${awg.h3 ?? 3}`,
+      `H4 = ${awg.h4 ?? 4}`
+    );
+  }
+
   return [
     '# BharatTunnel India-Exit WireGuard Client Configuration',
     '# Generated automatically by BharatTunnel Control Plane',
     '# DO NOT SHARE THIS FILE - CONTAINS PRIVATE CRYPTOGRAPHIC KEY',
     '',
-    '[Interface]',
-    `PrivateKey = ${options.clientPrivateKey}`,
-    `Address = ${options.clientAddress}`,
-    `DNS = ${dns}`,
+    ...interfaceLines,
     '',
     '[Peer]',
     `PublicKey = ${options.serverPublicKey}`,

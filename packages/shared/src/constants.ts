@@ -3,7 +3,7 @@ export const MONTHLY_BANDWIDTH_BYTES_DEFAULT = 50 * 1024 * 1024 * 1024; // 50 GB
 export const MAX_ACTIVE_SESSIONS_DEFAULT = 2;
 
 export const DEFAULT_VPN_PORT = 51820;
-export const DEFAULT_VPN_NETWORK = '10.50.0.0/24';
+export const DEFAULT_VPN_NETWORK = '10.50.0.0/22';
 export const DEFAULT_VPN_GATEWAY_IP = '10.50.0.1';
 export const DEFAULT_VPN_DNS = '10.50.0.1,1.1.1.1';
 export const DEFAULT_VPN_ALLOWED_IPS = '0.0.0.0/0, ::/0';

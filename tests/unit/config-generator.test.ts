@@ -31,6 +31,37 @@ describe('WireGuard Config & QR Generation', () => {
     expect(config).toContain('PersistentKeepalive = 25');
   });
 
+  it('generates AmneziaWG obfuscated config when enableAmneziaWg is true', () => {
+    const config = generateWireGuardClientConfig({
+      clientPrivateKey: clientKeys.privateKey,
+      clientAddress: '10.50.0.2/32',
+      serverPublicKey: serverKeys.publicKey,
+      serverEndpoint: '203.0.113.1:51820',
+      enableAmneziaWg: true,
+      amneziaParams: {
+        jc: 4,
+        jmin: 40,
+        jmax: 70,
+        s1: 15,
+        s2: 30,
+        h1: 1,
+        h2: 2,
+        h3: 3,
+        h4: 4,
+      },
+    });
+
+    expect(config).toContain('Jc = 4');
+    expect(config).toContain('Jmin = 40');
+    expect(config).toContain('Jmax = 70');
+    expect(config).toContain('S1 = 15');
+    expect(config).toContain('S2 = 30');
+    expect(config).toContain('H1 = 1');
+    expect(config).toContain('H2 = 2');
+    expect(config).toContain('H3 = 3');
+    expect(config).toContain('H4 = 4');
+  });
+
   it('rejects invalid client private key', () => {
     expect(() => {
       generateWireGuardClientConfig({

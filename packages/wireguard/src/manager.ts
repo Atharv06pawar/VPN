@@ -1,4 +1,4 @@
-import { IWireGuardDriver, WireGuardPeerInfo, GatewaySystemStats } from './types.js';
+import { IWireGuardDriver, WireGuardPeerInfo, GatewaySystemStats, AmneziaWgParams } from './types.js';
 import { IpAllocator } from './allocator.js';
 import { generateWireGuardKeyPair, isValidWireGuardKey } from './keygen.js';
 import { generateWireGuardClientConfig, generateQrCodeDataUrl } from './config-generator.js';
@@ -14,6 +14,8 @@ export interface WireGuardManagerConfig {
   allowedIps?: string;
   gatewayId?: string;
   gatewayName?: string;
+  enableAmneziaWg?: boolean;
+  amneziaParams?: AmneziaWgParams;
 }
 
 export interface ProvisionPeerResult {
@@ -34,6 +36,8 @@ export class WireGuardManager {
   private allowedIps: string;
   private gatewayId: string;
   private gatewayName: string;
+  private enableAmneziaWg: boolean;
+  private amneziaParams?: AmneziaWgParams;
 
   constructor(config: WireGuardManagerConfig) {
     this.driver = config.driver;
@@ -45,6 +49,8 @@ export class WireGuardManager {
     this.allowedIps = config.allowedIps || '0.0.0.0/0, ::/0';
     this.gatewayId = config.gatewayId || 'india-gw-1';
     this.gatewayName = config.gatewayName || 'BharatTunnel India Gateway (Mumbai-1)';
+    this.enableAmneziaWg = config.enableAmneziaWg ?? true;
+    this.amneziaParams = config.amneziaParams;
   }
 
   public getDriverName(): string {
@@ -88,6 +94,8 @@ export class WireGuardManager {
       serverEndpoint,
       dnsServers: this.dnsServer,
       allowedIps: this.allowedIps,
+      enableAmneziaWg: this.enableAmneziaWg,
+      amneziaParams: this.amneziaParams,
     });
 
     const qrCodeDataUrl = await generateQrCodeDataUrl(rawConfig);

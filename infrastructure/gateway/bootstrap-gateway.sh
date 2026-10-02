@@ -21,6 +21,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo "[+] Updating apt repositories and installing required packages..."
 apt-get update -y
 apt-get install -y --no-install-recommends \
+  software-properties-common \
   wireguard \
   wireguard-tools \
   nftables \
@@ -31,6 +32,14 @@ apt-get install -y --no-install-recommends \
   iproute2 \
   qrencode \
   ca-certificates
+
+# Attempt installing AmneziaWG tools for Russian DPI bypass
+if ! command -v awg >/dev/null 2>&1; then
+  echo "[+] Adding Amnezia PPA repository for anti-censorship AmneziaWG tools..."
+  add-apt-repository -y ppa:amnezia/ppa 2>/dev/null || true
+  apt-get update -y 2>/dev/null || true
+  apt-get install -y amneziawg amneziawg-tools 2>/dev/null || echo "[*] Standard WireGuard active. AWG module optional."
+fi
 
 # 3. Detect External Network Interface & Public IP
 echo "[+] Detecting external network routing..."
@@ -44,12 +53,20 @@ echo "[+] External interface detected: ${EXT_IFACE}"
 PUBLIC_IP=$(curl -s4 --max-time 5 https://api.ipify.org || curl -s4 --max-time 5 https://ifconfig.me || echo "UNKNOWN_IP")
 echo "[+] Indian Gateway Public IP: ${PUBLIC_IP}"
 
-# 4. Configure Linux Kernel IP Forwarding & Security Parameters
-echo "[+] Hardening sysctl network settings..."
+# 4. Configure Linux Kernel IP Forwarding, BBR & Security Parameters
+echo "[+] Hardening sysctl network settings and enabling BBR..."
 SYSCTL_CONF="/etc/sysctl.d/99-bharattunnel.conf"
 cat <<EOF > "${SYSCTL_CONF}"
 # Enable IPv4 forwarding for WireGuard NAT
 net.ipv4.ip_forward = 1
+
+# BBR Congestion Control & Socket Buffer Tuning for 400+ Concurrent Streams
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 65536 16777216
 
 # Disable IPv6 forwarding unless explicitly provisioned to prevent accidental IPv6 leaks
 net.ipv6.conf.all.forwarding = 0
@@ -93,7 +110,7 @@ if [[ ! -f "${WG_CONF}" ]]; then
   echo "[+] Writing baseline WireGuard interface config (${WG_CONF})..."
   cat <<EOF > "${WG_CONF}"
 [Interface]
-Address = 10.50.0.1/24
+Address = 10.50.0.1/22
 ListenPort = 51820
 PrivateKey = $(cat "${SERVER_PRIV_KEY}")
 
@@ -121,6 +138,6 @@ echo "========================================================"
 echo "Gateway Public IP:     ${PUBLIC_IP}"
 echo "Server Public Key:     ${SERVER_PUB}"
 echo "Listen Port:           51820 (UDP)"
-echo "Internal Subnet:       10.50.0.1/24"
+echo "Internal Subnet:       10.50.0.1/22"
 echo "External Interface:    ${EXT_IFACE}"
 echo "========================================================"
