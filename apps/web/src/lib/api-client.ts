@@ -13,9 +13,10 @@ import {
   CreateVoucherInput,
 } from '@bharattunnel/shared';
 
-// Use relative path in browser (same origin HTTPS)
-// Next.js rewrites forward this to http://137.23.44.209:4000/api/... server-side.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+// Always use empty string (relative URL e.g. /api/...)
+// In the browser, this guarantees same-origin HTTPS without mixed-content blocks.
+// Next.js rewrites in next.config.mjs forward requests server-side to the Oracle backend.
+const API_BASE = '';
 
 class ApiClient {
   private getToken(): string | null {
