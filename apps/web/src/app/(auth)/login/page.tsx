@@ -27,7 +27,7 @@ export default function LoginPage() {
         totpCode: requires2fa ? totpCode : undefined,
       });
 
-      if (res?.data?.twoFactorRequired) {
+      if (res?.data?.twoFactorRequired || res?.twoFactorRequired) {
         setRequires2fa(true);
         setLoading(false);
         return;
