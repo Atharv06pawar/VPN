@@ -24,8 +24,8 @@ const envSchema = z.object({
   VPN_SERVER_PUBLIC_KEY: z.string().default('YWRtaW4td2ctcHViLWtleS1zYW1wbGUtZGF0YS0xMjM0NTY3OA=='),
   VPN_NETWORK: z.string().default('10.50.0.0/22'),
   VPN_GATEWAY_IP: z.string().default('10.50.0.1'),
-  VPN_DNS_SERVER: z.string().default('10.50.0.1,1.1.1.1'),
-  VPN_INTERFACE: z.string().default('wg0'),
+  VPN_DNS_SERVER: z.string().default('1.1.1.1,8.8.8.8,10.50.0.1'),
+  VPN_INTERFACE: z.string().default('awg0'),
 
   ENABLE_AMNEZIA_WG: z.coerce.boolean().default(true),
   AMNEZIA_JC: z.coerce.number().default(4),

@@ -16,8 +16,11 @@ export const ipAllocator = new IpAllocator({
 let driver: IWireGuardDriver;
 
 if (appConfig.WIREGUARD_DRIVER === 'system') {
-  logger.info(`Initializing SystemWireGuardDriver for interface ${appConfig.VPN_INTERFACE}`);
-  driver = new SystemWireGuardDriver(appConfig.VPN_INTERFACE);
+  const binaryPath = appConfig.VPN_INTERFACE.startsWith('awg') || appConfig.ENABLE_AMNEZIA_WG
+    ? '/usr/bin/awg'
+    : '/usr/bin/wg';
+  logger.info(`Initializing SystemWireGuardDriver for interface ${appConfig.VPN_INTERFACE} using binary ${binaryPath}`);
+  driver = new SystemWireGuardDriver(appConfig.VPN_INTERFACE, binaryPath);
 } else {
   logger.info('Initializing MockWireGuardDriver for local development and non-Linux environment');
   driver = new MockWireGuardDriver(
