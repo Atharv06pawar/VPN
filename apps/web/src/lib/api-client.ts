@@ -40,9 +40,12 @@ class ApiClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
+
+    if (options.body && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -82,6 +85,7 @@ class ApiClient {
   public async setup2fa(): Promise<TwoFactorSetupResponse> {
     return this.request<TwoFactorSetupResponse>('/api/auth/2fa/setup', {
       method: 'POST',
+      body: JSON.stringify({}),
     });
   }
 

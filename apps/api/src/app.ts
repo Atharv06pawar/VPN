@@ -18,6 +18,21 @@ export async function buildApp(): Promise<FastifyInstance> {
     trustProxy: true,
   });
 
+  // Allow empty bodies on requests with application/json
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body: string | Buffer, defaultDone) => {
+    const raw = typeof body === 'string' ? body : body.toString('utf-8');
+    if (!raw || raw.trim() === '') {
+      defaultDone(null, {});
+      return;
+    }
+    try {
+      const json = JSON.parse(raw);
+      defaultDone(null, json);
+    } catch (err: any) {
+      defaultDone(err, undefined);
+    }
+  });
+
   // CORS - Permit Vercel deployments, localhost, and configured domains
   await app.register(cors, {
     origin: (origin, cb) => {
