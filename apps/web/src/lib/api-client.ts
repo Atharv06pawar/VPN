@@ -7,6 +7,10 @@ import {
   RegisterInput,
   LoginInput,
   CreateDeviceInput,
+  VoucherInfo,
+  ClaimVoucherResponse,
+  TwoFactorSetupResponse,
+  CreateVoucherInput,
 } from '@bharattunnel/shared';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -56,25 +60,37 @@ class ApiClient {
     return body.data as T;
   }
 
-  // Auth Endpoints
-  public async register(input: RegisterInput): Promise<AuthResponse> {
-    const res = await this.request<AuthResponse>('/api/auth/register', {
+  // Auth & 2FA Endpoints
+  public async loginAdmin(input: { email: string; password: string; totpCode?: string }): Promise<any> {
+    const res = await this.request<any>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(input),
     });
-    this.setToken(res.tokens.accessToken);
-    localStorage.setItem('bt_user', JSON.stringify(res.user));
+
+    if (res && res.tokens?.accessToken) {
+      this.setToken(res.tokens.accessToken);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bt_user', JSON.stringify(res.user));
+      }
+    }
     return res;
   }
 
-  public async login(input: LoginInput): Promise<AuthResponse> {
-    const res = await this.request<AuthResponse>('/api/auth/login', {
+  public async setup2fa(): Promise<TwoFactorSetupResponse> {
+    return this.request<TwoFactorSetupResponse>('/api/auth/2fa/setup', {
       method: 'POST',
-      body: JSON.stringify(input),
     });
-    this.setToken(res.tokens.accessToken);
-    localStorage.setItem('bt_user', JSON.stringify(res.user));
-    return res;
+  }
+
+  public async verify2fa(totpCode: string): Promise<any> {
+    return this.request('/api/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ totpCode }),
+    });
+  }
+
+  public async get2faStatus(): Promise<{ twoFactorEnabled: boolean }> {
+    return this.request<{ twoFactorEnabled: boolean }>('/api/auth/2fa/status');
   }
 
   public async logout(): Promise<void> {
@@ -89,29 +105,42 @@ class ApiClient {
     return this.request('/api/auth/me');
   }
 
-  public async deleteAccount(): Promise<void> {
-    await this.request('/api/auth/me', { method: 'DELETE' });
-    this.clearToken();
+  // ============================================================================
+  // STUDENT CLAIM PORTAL (Public, zero auth)
+  // ============================================================================
+  public async claimVoucher(code: string): Promise<ClaimVoucherResponse> {
+    return this.request<ClaimVoucherResponse>(`/api/vouchers/claim/${encodeURIComponent(code)}`);
   }
 
-  // Device Endpoints
-  public async getDevices(): Promise<DeviceInfo[]> {
-    return this.request<DeviceInfo[]>('/api/devices');
+  // ============================================================================
+  // ADMIN VOUCHER MANAGEMENT
+  // ============================================================================
+  public async listVouchers(page = 1, search = ''): Promise<{ vouchers: VoucherInfo[]; pagination: any }> {
+    return this.request(`/api/vouchers?page=${page}&limit=50&search=${encodeURIComponent(search)}`);
   }
 
-  public async createDevice(input: CreateDeviceInput): Promise<WireGuardClientConfig> {
-    return this.request<WireGuardClientConfig>('/api/devices', {
+  public async createVoucher(input: CreateVoucherInput): Promise<{ voucher: VoucherInfo; claimUrl: string }> {
+    return this.request<{ voucher: VoucherInfo; claimUrl: string }>('/api/vouchers', {
       method: 'POST',
       body: JSON.stringify(input),
     });
   }
 
-  public async getDeviceConfig(deviceId: string): Promise<WireGuardClientConfig> {
-    return this.request<WireGuardClientConfig>(`/api/devices/${deviceId}/config`);
+  public async renewVoucher(id: string, additionalDays = 30): Promise<any> {
+    return this.request(`/api/vouchers/${id}/renew`, {
+      method: 'POST',
+      body: JSON.stringify({ additionalDays }),
+    });
   }
 
-  public async revokeDevice(deviceId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/devices/${deviceId}`, {
+  public async revokeVoucher(id: string): Promise<any> {
+    return this.request(`/api/vouchers/${id}/revoke`, {
+      method: 'POST',
+    });
+  }
+
+  public async deleteVoucher(id: string): Promise<any> {
+    return this.request(`/api/vouchers/${id}`, {
       method: 'DELETE',
     });
   }
@@ -125,32 +154,9 @@ class ApiClient {
     return this.request<GatewayHealth>(`/api/gateways/${gatewayId}/status`);
   }
 
-  // Admin Endpoints
+  // Admin Metrics & Logs
   public async getAdminMetrics(): Promise<any> {
     return this.request('/api/admin/metrics');
-  }
-
-  public async getAdminUsers(page = 1, search = ''): Promise<any> {
-    return this.request(`/api/admin/users?page=${page}&limit=20&search=${encodeURIComponent(search)}`);
-  }
-
-  public async suspendUser(userId: string, reason?: string): Promise<any> {
-    return this.request(`/api/admin/users/${userId}/suspend`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  }
-
-  public async unsuspendUser(userId: string): Promise<any> {
-    return this.request(`/api/admin/users/${userId}/unsuspend`, {
-      method: 'POST',
-    });
-  }
-
-  public async revokeAdminDevice(deviceId: string): Promise<any> {
-    return this.request(`/api/admin/devices/${deviceId}/revoke`, {
-      method: 'POST',
-    });
   }
 
   public async getAuditLogs(page = 1): Promise<any> {

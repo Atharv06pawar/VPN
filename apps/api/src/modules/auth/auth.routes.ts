@@ -1,105 +1,41 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { prisma } from '../../lib/prisma.js';
 import { hashPassword, verifyPassword, generateSessionToken, hashToken } from '../../lib/auth.js';
-import { RegisterSchema, LoginSchema, AUDIT_ACTIONS, UserSummary } from '@bharattunnel/shared';
+import {
+  Admin2faLoginSchema,
+  Setup2faVerifySchema,
+  AUDIT_ACTIONS,
+  UserSummary,
+} from '@bharattunnel/shared';
 import { authenticate } from '../../middleware/authenticate.js';
 import { wireguardManager } from '../../lib/wireguard.js';
 import { logger } from '../../lib/logger.js';
+import { generateTotpSecret, getTotpUri, verifyTotp } from '../../lib/totp.js';
+import { generateQrCodeDataUrl } from '@bharattunnel/wireguard';
 
 export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-  // POST /api/auth/register
-  fastify.post('/register', {
-    config: {
-      rateLimit: { max: 10, timeWindow: '1 minute' },
-    },
-  }, async (request, reply) => {
-    const input = RegisterSchema.parse(request.body);
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: input.email },
-    });
-
-    if (existingUser) {
-      return reply.status(409).send({
-        success: false,
-        error: { code: 'EMAIL_ALREADY_EXISTS', message: 'An account with this email address already exists' },
-      });
-    }
-
-    const passwordHash = await hashPassword(input.password);
-
-    const user = await prisma.user.create({
-      data: {
-        email: input.email,
-        fullName: input.fullName,
-        passwordHash,
-        role: 'USER',
-        status: 'ACTIVE',
-      },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        status: true,
-        createdAt: true,
-      },
-    });
-
-    // Record audit event
-    await prisma.auditEvent.create({
-      data: {
-        userId: user.id,
-        action: AUDIT_ACTIONS.USER_REGISTERED,
-        ipAddress: request.ip,
-      },
-    });
-
-    // Generate tokens
-    const accessToken = fastify.jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      { expiresIn: '15m' }
-    );
-
-    const rawRefreshToken = generateSessionToken();
-    const tokenHash = hashToken(rawRefreshToken);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        tokenHash,
-        ipAddress: request.ip,
-        userAgent: request.headers['user-agent'] || null,
-        expiresAt,
-      },
-    });
-
-    logger.info('User successfully registered', { userId: user.id, email: user.email });
-
-    return reply.status(201).send({
-      success: true,
-      data: {
-        user: {
-          ...user,
-          createdAt: user.createdAt.toISOString(),
-        } as UserSummary,
-        tokens: {
-          accessToken,
-          refreshToken: rawRefreshToken,
-          expiresIn: 900,
-        },
+  // ============================================================================
+  // POST /api/auth/register - PERMANENTLY DISABLED FOR PUBLIC
+  // ============================================================================
+  fastify.post('/register', async (_request, reply) => {
+    return reply.status(403).send({
+      success: false,
+      error: {
+        code: 'REGISTRATION_DISABLED',
+        message: 'Public registration is disabled. BharatTunnel is an exclusive admin-managed service. Students access tunnels via 30-day voucher codes.',
       },
     });
   });
 
-  // POST /api/auth/login
+  // ============================================================================
+  // POST /api/auth/login - ADMIN ONLY with 2FA TOTP Support
+  // ============================================================================
   fastify.post('/login', {
     config: {
       rateLimit: { max: 10, timeWindow: '1 minute' },
     },
   }, async (request, reply) => {
-    const input = LoginSchema.parse(request.body);
+    const input = Admin2faLoginSchema.parse(request.body);
 
     const user = await prisma.user.findUnique({
       where: { email: input.email },
@@ -108,7 +44,17 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
     if (!user) {
       return reply.status(401).send({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email address or password' },
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid administrative email or password' },
+      });
+    }
+
+    if (user.role !== 'ADMIN') {
+      return reply.status(403).send({
+        success: false,
+        error: {
+          code: 'ADMIN_ACCESS_ONLY',
+          message: 'Access restricted to system administrators. Students should enter their voucher code at the claim portal.',
+        },
       });
     }
 
@@ -123,8 +69,30 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
     if (!isPasswordValid) {
       return reply.status(401).send({
         success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email address or password' },
+        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid administrative email or password' },
       });
+    }
+
+    // Step 2: Check Two-Factor Authentication (TOTP)
+    if (user.twoFactorEnabled) {
+      if (!input.totpCode) {
+        // Signal the frontend to display the 6-digit TOTP input modal
+        return reply.send({
+          success: true,
+          data: {
+            twoFactorRequired: true,
+            email: user.email,
+          },
+        });
+      }
+
+      const isTotpValid = verifyTotp(input.totpCode, user.twoFactorSecret || '');
+      if (!isTotpValid) {
+        return reply.status(401).send({
+          success: false,
+          error: { code: 'INVALID_2FA_CODE', message: 'Invalid 6-digit authenticator code. Check your device time and try again.' },
+        });
+      }
     }
 
     // Record audit event
@@ -138,7 +106,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
 
     const accessToken = fastify.jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      { expiresIn: '15m' }
+      { expiresIn: '12h' } // 12 hours for admin session
     );
 
     const rawRefreshToken = generateSessionToken();
@@ -155,9 +123,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       },
     });
 
-    const deviceCount = await prisma.device.count({
-      where: { userId: user.id, status: 'ACTIVE' },
-    });
+    const voucherCount = await prisma.voucher.count();
 
     return reply.send({
       success: true,
@@ -169,22 +135,98 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
           role: user.role,
           status: user.status,
           createdAt: user.createdAt.toISOString(),
-          deviceCount,
-        } as UserSummary,
+          deviceCount: voucherCount,
+          twoFactorEnabled: user.twoFactorEnabled,
+        },
         tokens: {
           accessToken,
           refreshToken: rawRefreshToken,
-          expiresIn: 900,
+          expiresIn: 43200,
         },
       },
     });
   });
 
+  // ============================================================================
+  // 2FA MANAGEMENT (Admin Setup & Verification)
+  // ============================================================================
+
+  // POST /api/auth/2fa/setup - Generate TOTP Secret and QR code for Authenticator App
+  fastify.post('/2fa/setup', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.user!.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.role !== 'ADMIN') {
+      return reply.status(403).send({ success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } });
+    }
+
+    const secret = generateTotpSecret();
+    const otpauthUri = getTotpUri(user.email, secret, 'BharatTunnel Admin');
+    const qrCodeDataUrl = await generateQrCodeDataUrl(otpauthUri);
+
+    // Save pending secret to user record
+    await prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorSecret: secret },
+    });
+
+    return reply.send({
+      success: true,
+      data: {
+        secret,
+        otpauthUri,
+        qrCodeDataUrl,
+      },
+    });
+  });
+
+  // POST /api/auth/2fa/verify - Verify TOTP code and finalize enabling 2FA
+  fastify.post('/2fa/verify', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.user!.id;
+    const { totpCode } = Setup2faVerifySchema.parse(request.body);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.twoFactorSecret) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'SETUP_NOT_INITIATED', message: 'Please initiate 2FA setup first' },
+      });
+    }
+
+    const isValid = verifyTotp(totpCode, user.twoFactorSecret);
+    if (!isValid) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'INVALID_2FA_CODE', message: 'Verification code incorrect. Please try the current code from your Authenticator app.' },
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorEnabled: true },
+    });
+
+    logger.info('Admin successfully activated 2FA TOTP', { userId: user.id });
+
+    return reply.send({
+      success: true,
+      data: { message: 'Two-Factor Authentication (2FA) is now active on your admin account.' },
+    });
+  });
+
+  // GET /api/auth/2fa/status
+  fastify.get('/2fa/status', { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.user!.id;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { twoFactorEnabled: true } });
+    return reply.send({ success: true, data: { twoFactorEnabled: Boolean(user?.twoFactorEnabled) } });
+  });
+
+  // ============================================================================
   // POST /api/auth/logout
+  // ============================================================================
   fastify.post('/logout', { preHandler: [authenticate] }, async (request, reply) => {
     const userId = request.user!.id;
 
-    // Prune user sessions
     await prisma.session.deleteMany({
       where: { userId },
     });
@@ -200,7 +242,9 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
     return reply.send({ success: true, data: { message: 'Logged out successfully' } });
   });
 
+  // ============================================================================
   // GET /api/auth/me
+  // ============================================================================
   fastify.get('/me', { preHandler: [authenticate] }, async (request, reply) => {
     const userId = request.user!.id;
 
@@ -212,11 +256,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         fullName: true,
         role: true,
         status: true,
+        twoFactorEnabled: true,
         createdAt: true,
-        devices: {
-          where: { status: 'ACTIVE' },
-          select: { id: true },
-        },
       },
     });
 
@@ -227,6 +268,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       });
     }
 
+    const voucherCount = await prisma.voucher.count();
+
     return reply.send({
       success: true,
       data: {
@@ -235,48 +278,10 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         fullName: user.fullName,
         role: user.role,
         status: user.status,
+        twoFactorEnabled: user.twoFactorEnabled,
         createdAt: user.createdAt.toISOString(),
-        deviceCount: user.devices.length,
-      } as UserSummary,
-    });
-  });
-
-  // DELETE /api/auth/me (Account Deletion)
-  fastify.delete('/me', { preHandler: [authenticate] }, async (request, reply) => {
-    const userId = request.user!.id;
-
-    // Retrieve active devices and peers to remove from WireGuard interface
-    const userDevices = await prisma.device.findMany({
-      where: { userId, status: 'ACTIVE' },
-      include: { vpnPeer: true },
-    });
-
-    for (const d of userDevices) {
-      if (d.vpnPeer?.publicKey) {
-        try {
-          await wireguardManager.revokePeer(d.vpnPeer.publicKey);
-        } catch (e: any) {
-          logger.warn(`Failed to clean up WireGuard peer during account deletion: ${e.message}`);
-        }
-      }
-    }
-
-    await prisma.auditEvent.create({
-      data: {
-        userId,
-        action: AUDIT_ACTIONS.USER_ACCOUNT_DELETED,
-        ipAddress: request.ip,
+        deviceCount: voucherCount,
       },
-    });
-
-    // Cascading delete deletes devices, peers, allocations, sessions
-    await prisma.user.delete({
-      where: { id: userId },
-    });
-
-    return reply.send({
-      success: true,
-      data: { message: 'Account and associated VPN tunnels deleted permanently' },
     });
   });
 };

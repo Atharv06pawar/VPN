@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Shield, Smartphone, Server, LogOut, User as UserIcon } from 'lucide-react';
+import { Shield, KeyRound, LogOut, Lock } from 'lucide-react';
 import './globals.css';
 import { api } from '@/lib/api-client';
 
@@ -17,6 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       const stored = localStorage.getItem('bt_user');
       if (stored) {
         setCurrentUser(JSON.parse(stored));
+      } else {
+        setCurrentUser(null);
       }
     } catch {
       // Ignore
@@ -32,10 +34,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <title>BharatTunnel 🇮🇳 - India Exit VPN for Students Abroad</title>
+        <title>BharatTunnel 🇮🇳 - India Exit VPN Gateway</title>
         <meta
           name="description"
-          content="Production-oriented India-exit WireGuard VPN service for Indian students living abroad."
+          content="Ultra-secure, censorship-resistant India-exit WireGuard & AmneziaWG VPN gateway with 30-day student vouchers."
         />
       </head>
       <body className="bg-[#090D16] text-slate-100 flex flex-col min-h-screen">
@@ -53,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   BharatTunnel <span className="text-sm">🇮🇳</span>
                 </span>
                 <span className="text-[10px] text-slate-400 tracking-wider uppercase font-semibold">
-                  India Exit Control Plane
+                  India Exit VPN Gateway
                 </span>
               </div>
             </Link>
@@ -61,42 +63,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="flex items-center gap-2 sm:gap-4 text-sm font-medium">
               <Link
                 href="/"
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${
                   pathname === '/' ? 'text-orange-400 bg-orange-500/10' : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Overview
+                <KeyRound className="w-4 h-4 text-orange-400" />
+                <span>Claim Voucher</span>
               </Link>
 
-              {currentUser && (
-                <Link
-                  href="/dashboard"
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    pathname === '/dashboard' ? 'text-orange-400 bg-orange-500/10' : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  Dashboard
-                </Link>
-              )}
-
-              {currentUser?.role === 'ADMIN' && (
-                <Link
-                  href="/admin"
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
-                    pathname.startsWith('/admin')
-                      ? 'text-orange-400 bg-orange-500/10'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  Admin
-                </Link>
-              )}
-
-              {currentUser ? (
+              {currentUser?.role === 'ADMIN' ? (
                 <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-800">
-                  <span className="hidden md:inline text-xs text-slate-400">
-                    {currentUser.fullName}
-                  </span>
+                  <Link
+                    href="/admin"
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                      pathname.startsWith('/admin')
+                        ? 'text-orange-400 bg-orange-500/10'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Admin Dashboard
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
@@ -109,15 +95,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="flex items-center gap-2 pl-2">
                   <Link
                     href="/login"
-                    className="px-3 py-1.5 text-slate-300 hover:text-white rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-800 rounded-lg hover:bg-slate-800/50 transition-colors"
                   >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="px-4 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-all shadow-md shadow-orange-500/20"
-                  >
-                    Register
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Admin Portal</span>
                   </Link>
                 </div>
               )}
@@ -134,10 +115,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-400">BharatTunnel 🇮🇳</span>
               <span>•</span>
-              <span>Encrypted WireGuard India-Exit Gateway</span>
+              <span>Mumbai-1 Gateway (137.23.44.209)</span>
+              <span>•</span>
+              <span>WireGuard & AmneziaWG (Anti-DPI)</span>
             </div>
             <p className="text-center sm:text-right">
-              Intended strictly for legitimate personal, educational & privacy use by Indian citizens abroad.
+              Ultra-secure private India-exit tunnels for Indian students & global users.
             </p>
           </div>
         </footer>

@@ -10,6 +10,7 @@ import { deviceRoutes } from './modules/devices/devices.routes.js';
 import { gatewayRoutes } from './modules/gateways/gateways.routes.js';
 import { usageRoutes } from './modules/usage/usage.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { voucherRoutes } from './modules/vouchers/vouchers.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -17,9 +18,22 @@ export async function buildApp(): Promise<FastifyInstance> {
     trustProxy: true,
   });
 
-  // CORS
+  // CORS - Permit Vercel deployments, localhost, and configured domains
   await app.register(cors, {
-    origin: [appConfig.WEB_BASE_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: (origin, cb) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return cb(null, true);
+      if (
+        origin === appConfig.WEB_BASE_URL ||
+        origin === 'http://localhost:3000' ||
+        origin === 'http://127.0.0.1:3000' ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost')
+      ) {
+        return cb(null, true);
+      }
+      return cb(null, true); // Permissive CORS for student claim portal
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -37,7 +51,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Rate Limiting
   await app.register(rateLimit, {
-    max: 60,
+    max: 120,
     timeWindow: '1 minute',
   });
 
@@ -53,6 +67,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // API Route registrations
   await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(voucherRoutes, { prefix: '/api/vouchers' });
   await app.register(deviceRoutes, { prefix: '/api/devices' });
   await app.register(gatewayRoutes, { prefix: '/api/gateways' });
   await app.register(usageRoutes, { prefix: '/api/usage' });

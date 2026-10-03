@@ -108,3 +108,45 @@ export interface ApiResponse<T = unknown> {
     details?: unknown;
   };
 }
+
+export type VoucherStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED';
+
+export interface VoucherInfo {
+  id: string;
+  code: string;
+  studentName: string;
+  telegramHandle?: string | null;
+  telegramChatId?: string | null;
+  notes?: string | null;
+  validityDays: number;
+  status: VoucherStatus;
+  createdAt: string;
+  expiresAt: string;
+  daysRemaining: number;
+  isExpired: boolean;
+  tunnelIp: string;
+  publicKey: string;
+  latestHandshakeAt?: string | null;
+  bytesRx: number;
+  bytesTx: number;
+}
+
+export interface ClaimVoucherResponse {
+  code: string;
+  studentName: string;
+  status: VoucherStatus;
+  daysRemaining: number;
+  expiresAt: string;
+  tunnelIp: string;
+  serverEndpoint: string;
+  amneziaConfig: string;
+  standardConfig: string;
+  amneziaQrCode: string;
+  standardQrCode: string;
+}
+
+export interface TwoFactorSetupResponse {
+  secret: string;
+  otpauthUri: string;
+  qrCodeDataUrl: string;
+}

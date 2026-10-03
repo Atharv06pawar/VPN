@@ -61,9 +61,40 @@ export const PaginationSchema = z.object({
   search: z.string().trim().max(100).optional(),
 });
 
+export const CreateVoucherSchema = z.object({
+  studentName: z.string().trim().min(2, 'Student name must be at least 2 characters').max(100),
+  telegramHandle: z.string().trim().max(100).optional(),
+  telegramChatId: z.string().trim().max(100).optional(),
+  notes: z.string().trim().max(255).optional(),
+  validityDays: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+export const RenewVoucherSchema = z.object({
+  additionalDays: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+export const Admin2faLoginSchema = z.object({
+  email: z.string().trim().email('Invalid email address').toLowerCase(),
+  password: z.string().min(1, 'Password is required'),
+  totpCode: z.string().regex(/^\d{6}$/, 'TOTP code must be 6 digits').optional(),
+});
+
+export const Setup2faVerifySchema = z.object({
+  totpCode: z.string().regex(/^\d{6}$/, 'TOTP code must be 6 digits'),
+});
+
+export const ClaimVoucherSchema = z.object({
+  code: z.string().trim().min(4, 'Voucher code is required').max(64),
+});
+
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type CreateDeviceInput = z.infer<typeof CreateDeviceSchema>;
 export type RevokeDeviceInput = z.infer<typeof RevokeDeviceSchema>;
 export type UpdateUserStatusInput = z.infer<typeof UpdateUserStatusSchema>;
 export type PaginationInput = z.infer<typeof PaginationSchema>;
+export type CreateVoucherInput = z.infer<typeof CreateVoucherSchema>;
+export type RenewVoucherInput = z.infer<typeof RenewVoucherSchema>;
+export type Admin2faLoginInput = z.infer<typeof Admin2faLoginSchema>;
+export type Setup2faVerifyInput = z.infer<typeof Setup2faVerifySchema>;
+export type ClaimVoucherInput = z.infer<typeof ClaimVoucherSchema>;

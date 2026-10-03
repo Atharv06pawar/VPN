@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { appConfig } from '@bharattunnel/config';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
+import { enforceVoucherExpirations } from './modules/vouchers/vouchers.routes.js';
 
 async function startServer() {
   const app = await buildApp();
@@ -16,9 +17,22 @@ async function startServer() {
     process.exit(1);
   }
 
+  // Periodic expiration enforcement job: runs every 10 minutes
+  const expiryInterval = setInterval(async () => {
+    try {
+      await enforceVoucherExpirations();
+    } catch (e: any) {
+      logger.warn(`Voucher expiry enforcement job failed: ${e.message}`);
+    }
+  }, 10 * 60 * 1000);
+
+  // Initial check on boot
+  enforceVoucherExpirations().catch((e) => logger.warn(`Initial expiry sweep failed: ${e.message}`));
+
   // Graceful shutdown handling
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}. Shutting down gracefully...`);
+    clearInterval(expiryInterval);
     try {
       await app.close();
       await prisma.$disconnect();

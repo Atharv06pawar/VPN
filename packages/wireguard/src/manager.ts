@@ -57,6 +57,18 @@ export class WireGuardManager {
     return this.driver.name;
   }
 
+  public getDriver(): IWireGuardDriver {
+    return this.driver;
+  }
+
+  public getAllocator(): IpAllocator {
+    return this.allocator;
+  }
+
+  public async addPeer(publicKey: string, allowedIp: string): Promise<void> {
+    await this.driver.addPeer(publicKey, allowedIp);
+  }
+
   /**
    * Provisions a new WireGuard peer: allocates an IP, installs peer into interface, and returns configuration.
    */
