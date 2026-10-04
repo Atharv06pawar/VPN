@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { ClaimVoucherResponse } from '@bharattunnel/shared';
+import QRCode from 'qrcode';
 
 function ClaimPortalContent() {
   const searchParams = useSearchParams();
@@ -30,6 +31,8 @@ function ClaimPortalContent() {
   const [error, setError] = useState<string | null>(null);
   const [voucherData, setVoucherData] = useState<ClaimVoucherResponse | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<'happ' | 'amnezia' | 'standard'>('happ');
+  const [selectedSni, setSelectedSni] = useState<'vk.com' | 'yandex.com'>('vk.com');
+  const [customHappQr, setCustomHappQr] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'ios' | 'android' | 'windows' | 'macos'>('ios');
   const [copied, setCopied] = useState(false);
   const [showRawConfig, setShowRawConfig] = useState(false);
@@ -64,16 +67,29 @@ function ClaimPortalContent() {
     }
   };
 
+  const activeHappUrl = React.useMemo(() => {
+    if (!voucherData?.happUrl) return '';
+    return voucherData.happUrl.replace(/sni=[^&]+/, `sni=${selectedSni}`);
+  }, [voucherData?.happUrl, selectedSni]);
+
+  useEffect(() => {
+    if (activeHappUrl) {
+      QRCode.toDataURL(activeHappUrl, { width: 320, margin: 2 })
+        .then(setCustomHappQr)
+        .catch(() => {});
+    }
+  }, [activeHappUrl]);
+
   const activeConfig =
     selectedProfile === 'happ'
-      ? voucherData?.happUrl
+      ? activeHappUrl
       : selectedProfile === 'amnezia'
       ? voucherData?.amneziaConfig
       : voucherData?.standardConfig;
 
   const activeQrCode =
     selectedProfile === 'happ'
-      ? voucherData?.happQrCode
+      ? customHappQr || voucherData?.happQrCode
       : selectedProfile === 'amnezia'
       ? voucherData?.amneziaQrCode
       : voucherData?.standardQrCode;
@@ -87,14 +103,12 @@ function ClaimPortalContent() {
   };
 
   const handleOpenHapp = () => {
-    if (!voucherData?.happUrl) return;
-    // Copy key to clipboard first so it's ready in Happ clipboard detector
-    navigator.clipboard.writeText(voucherData.happUrl);
+    const url = activeHappUrl || voucherData?.happUrl;
+    if (!url) return;
+    navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-
-    // Happ registers custom url or direct vless links
-    window.location.href = voucherData.happUrl;
+    window.location.href = url;
   };
 
   const handleDownload = () => {
@@ -379,7 +393,42 @@ function ClaimPortalContent() {
                       </p>
                     </div>
 
-                    <div className="flex flex-col gap-3 pt-2">
+                    <div className="space-y-3 pt-2">
+                      {/* Camouflage Profile Selector (Russia Anti-DPI) */}
+                      <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
+                            <span>Stealth SNI (Anti-Censorship)</span>
+                          </span>
+                          <span className="text-[10px] text-amber-400 font-semibold">Bypasses Russian DPI</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSni('vk.com')}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                              selectedSni === 'vk.com'
+                                ? 'bg-orange-500/20 border-orange-500 text-white shadow-sm ring-1 ring-orange-500/40'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            <span>🇷🇺 VKontakte (vk.com)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSni('yandex.com')}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                              selectedSni === 'yandex.com'
+                                ? 'bg-orange-500/20 border-orange-500 text-white shadow-sm ring-1 ring-orange-500/40'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            <span>🌐 Yandex (yandex.com)</span>
+                          </button>
+                        </div>
+                      </div>
+
                       <button
                         onClick={handleOpenHapp}
                         className="w-full px-5 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
@@ -390,7 +439,7 @@ function ClaimPortalContent() {
 
                       <div className="flex flex-col sm:flex-row gap-3">
                         <button
-                          onClick={() => handleCopy(voucherData.happUrl)}
+                          onClick={() => handleCopy(activeHappUrl || voucherData.happUrl)}
                           className="flex-1 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all flex items-center justify-center gap-2"
                         >
                           {copied ? (
