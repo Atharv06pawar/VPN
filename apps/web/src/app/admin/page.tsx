@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
       setGatewayStatus(gwRes);
     } catch (err: any) {
       if (err.message.includes('403') || err.message.includes('FORBIDDEN') || err.message.includes('401')) {
-        router.push('/login');
+        router.push('/godcode');
       } else {
         setError(err.message || 'Failed to load administrator data.');
       }

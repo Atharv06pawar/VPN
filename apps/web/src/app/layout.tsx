@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const handleLogout = async () => {
     await api.logout();
     setCurrentUser(null);
-    router.push('/login');
+    router.push('/');
   };
 
   return (
@@ -71,7 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span>Claim Voucher</span>
               </Link>
 
-              {currentUser?.role === 'ADMIN' ? (
+              {currentUser?.role === 'ADMIN' && (
                 <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-800">
                   <Link
                     href="/admin"
@@ -90,16 +90,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Logout</span>
                   </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 pl-2">
-                  <Link
-                    href="/login"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-800 rounded-lg hover:bg-slate-800/50 transition-colors"
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Admin Portal</span>
-                  </Link>
                 </div>
               )}
             </nav>
