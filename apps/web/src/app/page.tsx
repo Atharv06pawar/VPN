@@ -31,7 +31,7 @@ function ClaimPortalContent() {
   const [error, setError] = useState<string | null>(null);
   const [voucherData, setVoucherData] = useState<ClaimVoucherResponse | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<'happ' | 'amnezia' | 'standard'>('happ');
-  const [selectedSni, setSelectedSni] = useState<'vk.com' | 'yandex.com'>('vk.com');
+  const [selectedSni, setSelectedSni] = useState<'max.ru' | 'vk.com'>('max.ru');
   const [customHappQr, setCustomHappQr] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'ios' | 'android' | 'windows' | 'macos'>('ios');
   const [copied, setCopied] = useState(false);
@@ -69,7 +69,13 @@ function ClaimPortalContent() {
 
   const activeHappUrl = React.useMemo(() => {
     if (!voucherData?.happUrl) return '';
-    return voucherData.happUrl.replace(/sni=[^&]+/, `sni=${selectedSni}`);
+    let url = voucherData.happUrl.replace(/sni=[^&]+/, `sni=${selectedSni}`);
+    if (url.includes('fp=')) {
+      url = url.replace(/fp=[^&]+/, 'fp=edge');
+    } else {
+      url = url.replace(/type=tcp/, 'fp=edge&type=tcp');
+    }
+    return url;
   }, [voucherData?.happUrl, selectedSni]);
 
   useEffect(() => {
@@ -401,9 +407,20 @@ function ClaimPortalContent() {
                             <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
                             <span>Stealth SNI (Anti-Censorship)</span>
                           </span>
-                          <span className="text-[10px] text-amber-400 font-semibold">Bypasses Russian DPI</span>
+                          <span className="text-[10px] text-emerald-400 font-semibold">🇷🇺 Verified in Russia</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSni('max.ru')}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                              selectedSni === 'max.ru'
+                                ? 'bg-orange-500/20 border-orange-500 text-white shadow-sm ring-1 ring-orange-500/40'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            <span>🇷🇺 MAX (max.ru) ⭐</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => setSelectedSni('vk.com')}
@@ -413,18 +430,7 @@ function ClaimPortalContent() {
                                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                             }`}
                           >
-                            <span>🇷🇺 VKontakte (vk.com)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedSni('yandex.com')}
-                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
-                              selectedSni === 'yandex.com'
-                                ? 'bg-orange-500/20 border-orange-500 text-white shadow-sm ring-1 ring-orange-500/40'
-                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            <span>🌐 Yandex (yandex.com)</span>
+                            <span>🇷🇺 VK (vk.com)</span>
                           </button>
                         </div>
                       </div>
@@ -468,8 +474,17 @@ function ClaimPortalContent() {
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
-                      💡 <strong>Quick Tip:</strong> When you tap <strong>Copy Connection Key</strong> and open the Happ app, Happ will automatically detect your clipboard and ask: <em>&quot;Import node from clipboard?&quot;</em> — tap <strong>Confirm</strong> to connect!
+                    {/* Russia / Happ Connection Troubleshooting Note */}
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-slate-300 space-y-2">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Important Instructions for Happ (Russia / iOS):</span>
+                      </div>
+                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed text-slate-300">
+                        <li><strong>Delete old nodes in Happ</strong>: Swipe left and delete any previous nodes to prevent config collisions.</li>
+                        <li><strong>Import new key</strong>: Tap <em>Copy Connection Key</em> above, open Happ, and accept <em>&quot;Import from clipboard&quot;</em>.</li>
+                        <li><strong>Flip Connect ON</strong>: Tap the node, then switch the <strong>main Connect toggle ON</strong>. (Do not rely solely on the Ping number: Russian ISPs drop direct ICMP/Google probes, but full data flows once connected).</li>
+                      </ol>
                     </div>
 
                     <button

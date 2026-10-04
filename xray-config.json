@@ -1,0 +1,63 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "a0916d7a-11a5-4b07-ad93-fbb8dc116ac8",
+            "flow": "xtls-rprx-vision",
+            "email": "bt-hjz8-graf-nex3@bharattunnel.in"
+          },
+          {
+            "id": "7a778cce-616f-4b1a-bdbf-b0a91a0ed976",
+            "flow": "xtls-rprx-vision",
+            "email": "bt-fr4m-t4a5-rd8n@bharattunnel.in"
+          },
+          {
+            "id": "ee52b292-6666-4f2a-ac45-18446f469dd5",
+            "flow": "xtls-rprx-vision",
+            "email": "bt-n2vq-e2a7-m7yu@bharattunnel.in"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "max.ru:443",
+          "xver": 0,
+          "serverNames": [
+            "max.ru",
+            "www.max.ru"
+          ],
+          "privateKey": "YDfDIEdmepKmo0ThgDAJRI2Ycvv88jq5TdFOoKhbUE4",
+          "shortIds": [
+            "123456",
+            "abcdef"
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    }
+  ]
+}

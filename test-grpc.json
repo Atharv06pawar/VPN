@@ -1,0 +1,23 @@
+{
+  "inbounds": [{
+    "port": 14443,
+    "protocol": "vless",
+    "settings": {
+      "clients": [{"id": "a0916d7a-11a5-4b07-ad93-fbb8dc116ac8"}],
+      "decryption": "none"
+    },
+    "streamSettings": {
+      "network": "grpc",
+      "grpcSettings": {"serviceName": "x5.lk.v1.AccountService"},
+      "security": "reality",
+      "realitySettings": {
+        "show": false,
+        "dest": "max.ru:443",
+        "serverNames": ["max.ru"],
+        "privateKey": "YDfDIEdmepKmo0ThgDAJRI2Ycvv88jq5TdFOoKhbUE4",
+        "shortIds": ["123456"]
+      }
+    }
+  }],
+  "outbounds": [{"protocol": "freedom"}]
+}
