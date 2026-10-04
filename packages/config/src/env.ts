@@ -42,7 +42,7 @@ const envSchema = z.object({
 
   // VLESS Reality (Happ / Xray)
   XRAY_PORT: z.coerce.number().default(443),
-  XRAY_SERVER_NAME: z.string().default('www.apple.com'),
+  XRAY_SERVER_NAME: z.string().default('vk.com'),
   XRAY_REALITY_PUBLIC_KEY: z.string().default('36IjFKgEdKK2K9wDKH7U50gOFogn4Cck8bkI8YF_HyM'),
   XRAY_REALITY_SHORT_ID: z.string().default('123456'),
   XRAY_CONFIG_PATH: z.string().default('/etc/xray/config.json'),
