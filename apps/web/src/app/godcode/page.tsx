@@ -33,7 +33,7 @@ export default function GodCodePage() {
         return;
       }
 
-      router.push('/admin');
+      router.push('/ggadmn');
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {

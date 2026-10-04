@@ -12,7 +12,7 @@ export default function DashboardPage() {
       if (stored) {
         const user = JSON.parse(stored);
         if (user.role === 'ADMIN') {
-          router.replace('/admin');
+          router.replace('/ggadmn');
           return;
         }
       }

@@ -74,9 +74,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {currentUser?.role === 'ADMIN' && (
                 <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-800">
                   <Link
-                    href="/admin"
+                    href="/ggadmn"
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname.startsWith('/admin')
+                      pathname.startsWith('/ggadmn')
                         ? 'text-orange-400 bg-orange-500/10'
                         : 'text-slate-300 hover:text-white'
                     }`}
