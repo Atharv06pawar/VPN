@@ -40,6 +40,13 @@ const envSchema = z.object({
 
   WIREGUARD_DRIVER: z.enum(['system', 'mock']).default('mock'),
 
+  // VLESS Reality (Happ / Xray)
+  XRAY_PORT: z.coerce.number().default(443),
+  XRAY_SERVER_NAME: z.string().default('www.apple.com'),
+  XRAY_REALITY_PUBLIC_KEY: z.string().default('36IjFKgEdKK2K9wDKH7U50gOFogn4Cck8bkI8YF_HyM'),
+  XRAY_REALITY_SHORT_ID: z.string().default('123456'),
+  XRAY_CONFIG_PATH: z.string().default('/etc/xray/config.json'),
+
   MAX_DEVICES_PER_USER: z.coerce.number().int().min(1).max(10).default(2),
   MONTHLY_BANDWIDTH_GB: z.coerce.number().min(1).default(50),
   MAX_ACTIVE_SESSIONS: z.coerce.number().int().min(1).default(2),

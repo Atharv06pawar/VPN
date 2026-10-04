@@ -139,6 +139,8 @@ export interface ClaimVoucherResponse {
   expiresAt: string;
   tunnelIp: string;
   serverEndpoint: string;
+  happUrl: string;
+  happQrCode: string;
   amneziaConfig: string;
   standardConfig: string;
   amneziaQrCode: string;

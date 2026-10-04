@@ -107,10 +107,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span>•</span>
               <span>Mumbai-1 Gateway (137.23.44.209)</span>
               <span>•</span>
-              <span>WireGuard & AmneziaWG (Anti-DPI)</span>
+              <span>Happ (VLESS Reality) • WireGuard • AmneziaWG</span>
             </div>
             <p className="text-center sm:text-right">
-              Ultra-secure private India-exit tunnels for Indian students & global users.
+              Ultra-secure private India-exit tunnels for verified Indian students abroad.
             </p>
           </div>
         </footer>

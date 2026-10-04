@@ -17,6 +17,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Zap,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { ClaimVoucherResponse } from '@bharattunnel/shared';
@@ -27,7 +29,7 @@ function ClaimPortalContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voucherData, setVoucherData] = useState<ClaimVoucherResponse | null>(null);
-  const [selectedProfile, setSelectedProfile] = useState<'amnezia' | 'standard'>('amnezia');
+  const [selectedProfile, setSelectedProfile] = useState<'happ' | 'amnezia' | 'standard'>('happ');
   const [selectedPlatform, setSelectedPlatform] = useState<'ios' | 'android' | 'windows' | 'macos'>('ios');
   const [copied, setCopied] = useState(false);
   const [showRawConfig, setShowRawConfig] = useState(false);
@@ -62,14 +64,37 @@ function ClaimPortalContent() {
     }
   };
 
-  const activeConfig = selectedProfile === 'amnezia' ? voucherData?.amneziaConfig : voucherData?.standardConfig;
-  const activeQrCode = selectedProfile === 'amnezia' ? voucherData?.amneziaQrCode : voucherData?.standardQrCode;
+  const activeConfig =
+    selectedProfile === 'happ'
+      ? voucherData?.happUrl
+      : selectedProfile === 'amnezia'
+      ? voucherData?.amneziaConfig
+      : voucherData?.standardConfig;
 
-  const handleCopy = () => {
-    if (!activeConfig) return;
-    navigator.clipboard.writeText(activeConfig);
+  const activeQrCode =
+    selectedProfile === 'happ'
+      ? voucherData?.happQrCode
+      : selectedProfile === 'amnezia'
+      ? voucherData?.amneziaQrCode
+      : voucherData?.standardQrCode;
+
+  const handleCopy = (textToCopy?: string) => {
+    const text = textToCopy || activeConfig;
+    if (!text) return;
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleOpenHapp = () => {
+    if (!voucherData?.happUrl) return;
+    // Copy key to clipboard first so it's ready in Happ clipboard detector
+    navigator.clipboard.writeText(voucherData.happUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+
+    // Happ registers custom url or direct vless links
+    window.location.href = voucherData.happUrl;
   };
 
   const handleDownload = () => {
@@ -92,13 +117,13 @@ function ClaimPortalContent() {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-semibold">
           <span>🇮🇳 Mumbai Gateway Egress</span>
           <span>•</span>
-          <span className="text-slate-300">30-Day High Speed Access</span>
+          <span className="text-slate-300">30-Day Indian Student Tunnel</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
           BharatTunnel Access Portal
         </h1>
         <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto">
-          Enter your 30-day voucher code to download your private Indian WireGuard / AmneziaWG configuration.
+          Enter your 30-day verified access code to connect your iPhone, Android, or laptop to our high-speed Mumbai gateway.
         </p>
       </div>
 
@@ -201,71 +226,110 @@ function ClaimPortalContent() {
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3 text-amber-300 text-xs sm:text-sm">
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold">Strictly 1 Device per Code:</span> Your VPN configuration is
-              cryptographically tied to your assigned Indian IP ({voucherData.tunnelIp}). Sharing this configuration
-              or connecting from multiple devices simultaneously will drop active connections.
+              <span className="font-bold">Strictly 1 Device per Code:</span> Your access key is cryptographically tied
+              to your student subscription. Connecting from multiple devices simultaneously may invalidate your session.
             </div>
           </div>
 
-          {/* Profile Selector (AmneziaWG vs Standard WireGuard) */}
+          {/* Profile Selector (Happ vs AmneziaWG vs Standard WireGuard) */}
           <div className="space-y-4">
             <div className="text-xs uppercase tracking-wider text-slate-400 font-bold">
               Step 1: Choose Your Connection Profile
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Option 1: Happ (Recommended) */}
+              <button
+                type="button"
+                onClick={() => setSelectedProfile('happ')}
+                className={`p-5 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
+                  selectedProfile === 'happ'
+                    ? 'bg-gradient-to-b from-orange-500/20 to-orange-500/5 border-orange-500 text-white shadow-xl shadow-orange-500/15 ring-1 ring-orange-500/50'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-base font-bold flex items-center gap-2 text-white">
+                      <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      <span>Happ (iPhone / iPad)</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black tracking-wide bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow">
+                      RECOMMENDED
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                    VLESS Reality TLS 1.3 stealth protocol (camouflaged as Apple traffic). Zero setup, instant 1-tap connection, and ultra-low latency.
+                  </p>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-amber-400 font-medium">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>1-Tap Import into Happ app</span>
+                </div>
+              </button>
+
+              {/* Option 2: AmneziaWG */}
               <button
                 type="button"
                 onClick={() => setSelectedProfile('amnezia')}
-                className={`p-5 rounded-2xl border text-left transition-all relative ${
+                className={`p-5 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
                   selectedProfile === 'amnezia'
                     ? 'bg-orange-500/10 border-orange-500 text-white shadow-lg shadow-orange-500/10'
                     : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-bold flex items-center gap-2">
-                    <span>🇷🇺 Russia / Anti-DPI (AmneziaWG)</span>
-                  </span>
-                  {selectedProfile === 'amnezia' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white">
-                      SELECTED
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-bold flex items-center gap-2">
+                      <span>🇷🇺 AmneziaWG</span>
                     </span>
-                  )}
+                    {selectedProfile === 'amnezia' && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white">
+                        SELECTED
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Junk packets & header obfuscation for strict DPI networks. For users with the <strong>AmneziaVPN</strong> client on Android or PC.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">
-                  Includes junk packets and header obfuscation to bypass Russian TSPU (ТСПУ) WireGuard blocks.
-                  Use with official <strong>AmneziaVPN</strong> client.
-                </p>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+                  AmneziaVPN config profile
+                </div>
               </button>
 
+              {/* Option 3: Standard WireGuard */}
               <button
                 type="button"
                 onClick={() => setSelectedProfile('standard')}
-                className={`p-5 rounded-2xl border text-left transition-all relative ${
+                className={`p-5 rounded-2xl border text-left transition-all relative flex flex-col justify-between ${
                   selectedProfile === 'standard'
                     ? 'bg-orange-500/10 border-orange-500 text-white shadow-lg shadow-orange-500/10'
                     : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-bold flex items-center gap-2">
-                    <span>🌍 Worldwide / Global (Standard WG)</span>
-                  </span>
-                  {selectedProfile === 'standard' && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white">
-                      SELECTED
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-bold flex items-center gap-2">
+                      <span>🌍 WireGuard (Global / PC)</span>
                     </span>
-                  )}
+                    {selectedProfile === 'standard' && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white">
+                        SELECTED
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Native WireGuard config file. Maximum speed and compatibility across Windows, macOS, Linux, and router firmware.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">
-                  Clean, standard WireGuard configuration for maximum speed and compatibility across Europe, USA,
-                  Middle East, and native WireGuard apps.
-                </p>
+                <div className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+                  Standard WireGuard .conf
+                </div>
               </button>
             </div>
           </div>
 
-          {/* Step 2: Download or Scan QR */}
+          {/* Step 2: Connect Your Device */}
           <div className="space-y-4">
             <div className="text-xs uppercase tracking-wider text-slate-400 font-bold">
               Step 2: Connect Your Device
@@ -278,7 +342,7 @@ function ClaimPortalContent() {
                   {activeQrCode ? (
                     <img
                       src={activeQrCode}
-                      alt="WireGuard Configuration QR Code"
+                      alt="Connection QR Code"
                       className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-lg"
                     />
                   ) : (
@@ -288,59 +352,144 @@ function ClaimPortalContent() {
                   )}
                 </div>
                 <span className="text-xs text-slate-400 font-medium text-center">
-                  Scan with <strong>AmneziaVPN</strong> or <strong>WireGuard</strong> mobile app
+                  {selectedProfile === 'happ' ? (
+                    <>
+                      Scan inside <strong>Happ</strong> app (tap <strong>+</strong> → <strong>Scan QR</strong>)
+                    </>
+                  ) : (
+                    <>
+                      Scan with <strong>AmneziaVPN</strong> or <strong>WireGuard</strong> mobile app
+                    </>
+                  )}
                 </span>
               </div>
 
               {/* Actions Column */}
               <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="text-lg font-bold text-white">Direct Profile Import</div>
-                  <p className="text-xs text-slate-400">
-                    On mobile, scan the QR code directly inside the app. On desktop or laptop, download the configuration file.
-                  </p>
-                </div>
+                {selectedProfile === 'happ' ? (
+                  // Happ Experience
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-lg font-bold text-white flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-orange-400" />
+                        <span>Happ 1-Click Connect</span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        If you have the <strong>Happ</strong> app installed on your iPhone or iPad, tap <strong>Open in Happ</strong> below or scan the QR code to connect instantly.
+                      </p>
+                    </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    onClick={handleDownload}
-                    className="flex-1 px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download .conf</span>
-                  </button>
+                    <div className="flex flex-col gap-3 pt-2">
+                      <button
+                        onClick={handleOpenHapp}
+                        className="w-full px-5 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-4 h-4 fill-white" />
+                        <span>Open / Import in Happ</span>
+                      </button>
 
-                  <button
-                    onClick={handleCopy}
-                    className="flex-1 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4 text-emerald-400" />
-                        <span className="text-emerald-400">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        <span>Copy Text</span>
-                      </>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => handleCopy(voucherData.happUrl)}
+                          className="flex-1 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all flex items-center justify-center gap-2"
+                        >
+                          {copied ? (
+                            <>
+                              <Check className="w-4 h-4 text-emerald-400" />
+                              <span className="text-emerald-400">Key Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" />
+                              <span>Copy Connection Key</span>
+                            </>
+                          )}
+                        </button>
+
+                        <a
+                          href="https://apps.apple.com/app/id6504287215"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex-1 px-4 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-orange-400 font-bold text-xs border border-orange-500/30 hover:border-orange-500/50 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Apple className="w-4 h-4" />
+                          <span>Get Happ App</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+                      💡 <strong>Quick Tip:</strong> When you tap <strong>Copy Connection Key</strong> and open the Happ app, Happ will automatically detect your clipboard and ask: <em>&quot;Import node from clipboard?&quot;</em> — tap <strong>Confirm</strong> to connect!
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowRawConfig(!showRawConfig)}
+                      className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 pt-1 transition-colors"
+                    >
+                      {showRawConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <span>{showRawConfig ? 'Hide connection URI' : 'View connection URI'}</span>
+                    </button>
+
+                    {showRawConfig && voucherData.happUrl && (
+                      <pre className="p-3 rounded-xl bg-black/60 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-36 break-all whitespace-pre-wrap">
+                        {voucherData.happUrl}
+                      </pre>
                     )}
-                  </button>
-                </div>
+                  </>
+                ) : (
+                  // WireGuard / Amnezia Experience
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-lg font-bold text-white">Direct Profile Import</div>
+                      <p className="text-xs text-slate-400">
+                        On mobile, scan the QR code directly inside the app. On desktop or laptop, download the configuration file.
+                      </p>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowRawConfig(!showRawConfig)}
-                  className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 pt-2 transition-colors"
-                >
-                  {showRawConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  <span>{showRawConfig ? 'Hide raw config text' : 'View raw config text'}</span>
-                </button>
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <button
+                        onClick={handleDownload}
+                        className="flex-1 px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download .conf</span>
+                      </button>
 
-                {showRawConfig && activeConfig && (
-                  <pre className="p-3 rounded-xl bg-black/60 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-48">
-                    {activeConfig}
-                  </pre>
+                      <button
+                        onClick={() => handleCopy()}
+                        className="flex-1 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-400" />
+                            <span className="text-emerald-400">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span>Copy Text</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowRawConfig(!showRawConfig)}
+                      className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 pt-2 transition-colors"
+                    >
+                      {showRawConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <span>{showRawConfig ? 'Hide raw config text' : 'View raw config text'}</span>
+                    </button>
+
+                    {showRawConfig && activeConfig && (
+                      <pre className="p-3 rounded-xl bg-black/60 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-48">
+                        {activeConfig}
+                      </pre>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -408,11 +557,14 @@ function ClaimPortalContent() {
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 text-sm text-slate-300 space-y-3">
               {selectedPlatform === 'ios' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="font-bold text-white flex items-center justify-between">
-                    <span>iPhone / iPad Setup</span>
+                    <span className="flex items-center gap-2">
+                      <Apple className="w-4 h-4 text-orange-400" />
+                      <span>Recommended iPhone & iPad Setup (Happ)</span>
+                    </span>
                     <a
-                      href="https://apps.apple.com/app/amneziavpn/id1600529900"
+                      href="https://apps.apple.com/app/id6504287215"
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-orange-400 hover:underline flex items-center gap-1"
@@ -421,20 +573,29 @@ function ClaimPortalContent() {
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300">
-                    <li>Install <strong>AmneziaVPN</strong> (recommended for Russia) or <strong>WireGuard</strong> from the App Store.</li>
-                    <li>Open the app, tap <strong>Add / +</strong>, then choose <strong>Scan QR code</strong>.</li>
-                    <li>Scan the QR code displayed above, allow adding VPN Configuration when prompted, and tap <strong>Connect</strong>.</li>
+                  <ol className="list-decimal list-inside space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <li>
+                      Install <strong>Happ - Proxy Utility</strong> from the App Store (<a href="https://apps.apple.com/app/id6504287215" target="_blank" rel="noreferrer" className="text-orange-400 underline">Tap here to install</a>).
+                    </li>
+                    <li>
+                      On this portal, choose the <strong>Happ</strong> profile tab and tap <strong>&quot;Open / Import in Happ&quot;</strong>, OR open Happ, tap <strong>+</strong>, and scan the QR code.
+                    </li>
+                    <li>
+                      When prompted, allow adding the VPN configuration in iOS Settings.
+                    </li>
+                    <li>
+                      Tap the <strong>Connect</strong> button in Happ. Your iPhone will immediately route through our Mumbai-1 gateway with zero throttling!
+                    </li>
                   </ol>
                 </div>
               )}
 
               {selectedPlatform === 'android' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="font-bold text-white flex items-center justify-between">
                     <span>Android Phone / Tablet Setup</span>
                     <a
-                      href="https://play.google.com/store/apps/details?id=org.amnezia.vpn"
+                      href="https://play.google.com/store/apps/details?id=com.v2ray.ang"
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-orange-400 hover:underline flex items-center gap-1"
@@ -443,56 +604,75 @@ function ClaimPortalContent() {
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300">
-                    <li>Install <strong>AmneziaVPN</strong> from Google Play (or download the APK from GitHub if restricted).</li>
-                    <li>Open AmneziaVPN, tap the <strong>+</strong> button, and tap <strong>Scan QR Code</strong>.</li>
-                    <li>Scan the QR code above, grant VPN permission, and toggle the switch to connect.</li>
+                  <ol className="list-decimal list-inside space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <li>
+                      Install <strong>v2rayNG</strong> or <strong>Happ</strong> from Google Play.
+                    </li>
+                    <li>
+                      Select the <strong>Happ</strong> profile above, tap <strong>Copy Connection Key</strong>, then open v2rayNG and tap <strong>+</strong> → <strong>Import config from clipboard</strong> (or scan the QR code).
+                    </li>
+                    <li>
+                      Alternatively, if using <strong>AmneziaVPN</strong>, select the <strong>AmneziaWG</strong> tab above and scan the Amnezia QR code.
+                    </li>
+                    <li>
+                      Tap the V button / Connect toggle to start your Indian tunnel.
+                    </li>
                   </ol>
                 </div>
               )}
 
               {selectedPlatform === 'windows' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="font-bold text-white flex items-center justify-between">
                     <span>Windows 10 / 11 Setup</span>
                     <a
-                      href="https://github.com/amnezia-vpn/amnezia-client/releases"
+                      href="https://www.wireguard.com/install/"
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-orange-400 hover:underline flex items-center gap-1"
                     >
-                      <span>Download Amnezia Client</span>
+                      <span>WireGuard for Windows</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300">
-                    <li>Download & install <strong>AmneziaVPN for Windows</strong> (or official WireGuard for Windows).</li>
-                    <li>Click <strong>Download .conf</strong> above to save the configuration file to your PC.</li>
-                    <li>In AmneziaVPN, click <strong>Import Connection / File</strong> and select your downloaded <code className="text-orange-400">.conf</code> file.</li>
-                    <li>Click <strong>Connect</strong>. All your internet traffic now exits through Mumbai, India.</li>
+                  <ol className="list-decimal list-inside space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <li>
+                      <strong>Option A (VLESS Reality / Anti-DPI):</strong> Use <strong>v2rayN</strong> or <strong>Sing-box</strong> for Windows. Copy your connection key and import from clipboard.
+                    </li>
+                    <li>
+                      <strong>Option B (Official WireGuard):</strong> Select the <strong>WireGuard (Global / PC)</strong> tab above, click <strong>Download .conf</strong>, and import it into official WireGuard for Windows.
+                    </li>
+                    <li>
+                      Click <strong>Activate / Connect</strong>. All traffic will route through authentic Mumbai IP space.
+                    </li>
                   </ol>
                 </div>
               )}
 
               {selectedPlatform === 'macos' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="font-bold text-white flex items-center justify-between">
                     <span>Mac (Apple Silicon & Intel) Setup</span>
                     <a
-                      href="https://github.com/amnezia-vpn/amnezia-client/releases"
+                      href="https://apps.apple.com/app/wireguard/id1451685025"
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs text-orange-400 hover:underline flex items-center gap-1"
                     >
-                      <span>Download Amnezia DMG</span>
+                      <span>Mac App Store</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300">
-                    <li>Install <strong>AmneziaVPN for Mac</strong> (or WireGuard from the Mac App Store).</li>
-                    <li>Click <strong>Download .conf</strong> above to save your configuration file.</li>
-                    <li>Open the app, click <strong>Import Tunnel from File</strong>, and select the downloaded file.</li>
-                    <li>Click <strong>Activate</strong>. Verify your connection at <a href="https://whatismyipaddress.com" target="_blank" rel="noreferrer" className="text-orange-400 underline">whatismyipaddress.com</a> (shows Mumbai, India).</li>
+                  <ol className="list-decimal list-inside space-y-2 text-xs text-slate-300 leading-relaxed">
+                    <li>
+                      <strong>Option A (Happ / VLESS):</strong> Download <strong>Happ</strong> directly from the Mac App Store (works on all Apple Silicon M1/M2/M3/M4 Macs). Tap <strong>Open / Import in Happ</strong> above.
+                    </li>
+                    <li>
+                      <strong>Option B (Native WireGuard):</strong> Install WireGuard from the Mac App Store, select the <strong>WireGuard (Global / PC)</strong> tab above, click <strong>Download .conf</strong>, and import the tunnel file.
+                    </li>
+                    <li>
+                      Click <strong>Activate</strong>. Verify your connection at <a href="https://whatismyipaddress.com" target="_blank" rel="noreferrer" className="text-orange-400 underline">whatismyipaddress.com</a> (shows Mumbai, India).
+                    </li>
                   </ol>
                 </div>
               )}
@@ -507,10 +687,9 @@ function ClaimPortalContent() {
           <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
             <Radio className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-white text-base">Censorship-Resistant Anti-DPI</h3>
+          <h3 className="font-bold text-white text-base">Censorship-Resistant Stealth</h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Engineered specifically to withstand TSPU deep-packet inspection boxes in Russia and other hostile
-            networks using randomized packet junk padding and modified protocol headers.
+            Multi-protocol egress supporting VLESS-Reality TLS 1.3 (mimics Apple CDN traffic) and AmneziaWG packet padding to withstand strict DPI firewalls abroad.
           </p>
         </div>
 

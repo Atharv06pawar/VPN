@@ -17,6 +17,7 @@ import {
   VoucherInfo,
   ClaimVoucherResponse,
 } from '@bharattunnel/shared';
+import { generateVlessUrl, syncActiveVouchersToXray } from '../../lib/xray.js';
 
 /**
  * Generates a human-readable, high-entropy 12-char alphanumeric voucher code.
@@ -129,9 +130,13 @@ export const voucherRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       enableAmneziaWg: false,
     });
 
-    const [amneziaQrCode, standardQrCode] = await Promise.all([
+    // Generate Profile C: Happ / Xray (VLESS-Reality TLS 1.3 - Recommended for iOS & Anti-DPI)
+    const happUrl = generateVlessUrl(voucher.id, voucher.studentName);
+
+    const [amneziaQrCode, standardQrCode, happQrCode] = await Promise.all([
       generateQrCodeDataUrl(amneziaConfig),
       generateQrCodeDataUrl(standardConfig),
+      generateQrCodeDataUrl(happUrl),
     ]);
 
     const responseData: ClaimVoucherResponse = {
@@ -142,6 +147,8 @@ export const voucherRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       expiresAt: voucher.expiresAt.toISOString(),
       tunnelIp: voucher.tunnelIp,
       serverEndpoint: voucher.serverEndpoint,
+      happUrl,
+      happQrCode,
       amneziaConfig,
       standardConfig,
       amneziaQrCode,
@@ -324,6 +331,9 @@ export const voucherRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       tunnelIp,
     });
 
+    // Synchronize client list with Xray Reality for Happ
+    syncActiveVouchersToXray().catch((e) => logger.warn(`Failed to sync Xray: ${e.message}`));
+
     const now = new Date();
     const daysRemaining = Math.max(0, Math.ceil((voucher.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -403,6 +413,8 @@ export const voucherRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       daysRemaining,
     });
 
+    syncActiveVouchersToXray().catch((e) => logger.warn(`Failed to sync Xray: ${e.message}`));
+
     return reply.send({
       success: true,
       data: {
@@ -439,6 +451,8 @@ export const voucherRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       data: { status: 'REVOKED' },
     });
 
+    syncActiveVouchersToXray().catch((e) => logger.warn(`Failed to sync Xray: ${e.message}`));
+
     return reply.send({
       success: true,
       data: { id: updated.id, status: updated.status },
@@ -472,6 +486,8 @@ export const voucherRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       }),
     ]);
 
+    syncActiveVouchersToXray().catch((e) => logger.warn(`Failed to sync Xray: ${e.message}`));
+
     return reply.send({
       success: true,
       data: { message: `Voucher ${voucher.code} and IP ${voucher.tunnelIp} deleted successfully` },
@@ -503,6 +519,10 @@ export async function enforceVoucherExpirations(): Promise<void> {
         where: { id: v.id },
         data: { status: 'EXPIRED' },
       });
+    }
+
+    if (expiredActiveVouchers.length > 0) {
+      await syncActiveVouchersToXray();
     }
   } catch (err: any) {
     logger.error('Error enforcing voucher expirations', { error: err.message });
