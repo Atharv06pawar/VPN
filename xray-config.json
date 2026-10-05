@@ -31,11 +31,10 @@
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "max.ru:443",
+          "dest": "gateway.icloud.com:443",
           "xver": 0,
           "serverNames": [
-            "max.ru",
-            "www.max.ru"
+            "gateway.icloud.com"
           ],
           "privateKey": "YDfDIEdmepKmo0ThgDAJRI2Ycvv88jq5TdFOoKhbUE4",
           "shortIds": [

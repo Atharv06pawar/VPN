@@ -31,7 +31,7 @@ function ClaimPortalContent() {
   const [error, setError] = useState<string | null>(null);
   const [voucherData, setVoucherData] = useState<ClaimVoucherResponse | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<'happ' | 'amnezia' | 'standard'>('happ');
-  const [selectedSni, setSelectedSni] = useState<'max.ru' | 'vk.com'>('max.ru');
+  const [selectedSni, setSelectedSni] = useState<'gateway.icloud.com' | 'max.ru'>('gateway.icloud.com');
   const [customHappQr, setCustomHappQr] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'ios' | 'android' | 'windows' | 'macos'>('ios');
   const [copied, setCopied] = useState(false);
@@ -70,10 +70,11 @@ function ClaimPortalContent() {
   const activeHappUrl = React.useMemo(() => {
     if (!voucherData?.happUrl) return '';
     let url = voucherData.happUrl.replace(/sni=[^&]+/, `sni=${selectedSni}`);
+    const fp = selectedSni === 'gateway.icloud.com' ? 'chrome' : 'edge';
     if (url.includes('fp=')) {
-      url = url.replace(/fp=[^&]+/, 'fp=edge');
+      url = url.replace(/fp=[^&]+/, `fp=${fp}`);
     } else {
-      url = url.replace(/type=tcp/, 'fp=edge&type=tcp');
+      url = url.replace(/type=tcp/, `fp=${fp}&type=tcp`);
     }
     return url;
   }, [voucherData?.happUrl, selectedSni]);
@@ -412,6 +413,17 @@ function ClaimPortalContent() {
                         <div className="grid grid-cols-2 gap-2 pt-1">
                           <button
                             type="button"
+                            onClick={() => setSelectedSni('gateway.icloud.com')}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                              selectedSni === 'gateway.icloud.com'
+                                ? 'bg-orange-500/20 border-orange-500 text-white shadow-sm ring-1 ring-orange-500/40'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            <span>🍎 Apple iCloud (Global) ⭐</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setSelectedSni('max.ru')}
                             className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
                               selectedSni === 'max.ru'
@@ -419,18 +431,7 @@ function ClaimPortalContent() {
                                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                             }`}
                           >
-                            <span>🇷🇺 MAX (max.ru) ⭐</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedSni('vk.com')}
-                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
-                              selectedSni === 'vk.com'
-                                ? 'bg-orange-500/20 border-orange-500 text-white shadow-sm ring-1 ring-orange-500/40'
-                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            <span>🇷🇺 VK (vk.com)</span>
+                            <span>🇷🇺 MAX (max.ru)</span>
                           </button>
                         </div>
                       </div>

@@ -17,7 +17,7 @@ export function generateVlessUrl(voucherId: string, studentName?: string): strin
   const sni = appConfig.XRAY_SERVER_NAME;
   const pbk = appConfig.XRAY_REALITY_PUBLIC_KEY;
   const sid = appConfig.XRAY_REALITY_SHORT_ID;
-  const fp = (appConfig as any).XRAY_FINGERPRINT || 'edge';
+  const fp = (appConfig as any).XRAY_FINGERPRINT || 'chrome';
   const label = encodeURIComponent(`BharatTunnel 🇮🇳 Mumbai (${studentName || 'Student'})`);
 
   return `vless://${voucherId}@${host}:${port}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${sni}&fp=${fp}&pbk=${pbk}&sid=${sid}&type=tcp#${label}`;
